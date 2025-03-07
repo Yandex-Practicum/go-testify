@@ -6,10 +6,11 @@ import (
     "strconv"
     "strings"
     "testing"
+    "github.com/stretchr/testify/assert"
 )
 
 var cafeList = map[string][]string{
-    "moscow": []string{"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"},
+    "moscow": {"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"},
 }
 
 func mainHandle(w http.ResponseWriter, req *http.Request) {
@@ -46,13 +47,48 @@ func mainHandle(w http.ResponseWriter, req *http.Request) {
     w.Write([]byte(answer))
 }
 
-func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
-    totalCount := 4
-    req := ... // здесь нужно создать запрос к сервису
+// Тесты
+func TestValidRequestReturns200AndNotEmptyBody(t *testing.T) {
+    req, err := http.NewRequest("GET", "/cafe?city=moscow&count=2", nil)
+    assert.NoError(t, err)
 
     responseRecorder := httptest.NewRecorder()
     handler := http.HandlerFunc(mainHandle)
     handler.ServeHTTP(responseRecorder, req)
 
-    // здесь нужно добавить необходимые проверки
+    assert.Equal(t, http.StatusOK, responseRecorder.Code)
+    assert.NotEmpty(t, responseRecorder.Body.String())
 }
+
+func TestInvalidCityReturns400(t *testing.T) {
+    req, err := http.NewRequest("GET", "/cafe?city=unknown&count=2", nil)
+    assert.NoError(t, err)
+
+    responseRecorder := httptest.NewRecorder()
+    handler := http.HandlerFunc(mainHandle)
+    handler.ServeHTTP(responseRecorder, req)
+
+    assert.Equal(t, http.StatusBadRequest, responseRecorder.Code)
+    assert.Equal(t, "wrong city value", responseRecorder.Body.String())
+}
+
+func TestCountMoreThanTotalReturnsAllCafes(t *testing.T) {
+    req, err := http.NewRequest("GET", "/cafe?city=moscow&count=10", nil)
+    assert.NoError(t, err)
+
+    responseRecorder := httptest.NewRecorder()
+    handler := http.HandlerFunc(mainHandle)
+    handler.ServeHTTP(responseRecorder, req)
+
+    assert.Equal(t, http.StatusOK, responseRecorder.Code)
+    expectedResponse := "Мир кофе,Сладкоежка,Кофе и завтраки,Сытый студент"
+    assert.Equal(t, expectedResponse, responseRecorder.Body.String())
+}
+
+// Основная функция, которая запускает сервер
+func main() {
+    http.HandleFunc("/cafe", mainHandle)
+    http.ListenAndServe(":8080", nil)
+}
+
+
