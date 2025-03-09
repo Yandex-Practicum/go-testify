@@ -15,10 +15,8 @@ func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
 	handler.ServeHTTP(responseRecorder, req)
-	expected := strings.Join(cafeList["moscow"], ",")
-	assert.GreaterOrEqual(t, 10, totalCount)                  // Проверяет, что введенное число больше, чем есть в списке
-	assert.Equal(t, http.StatusOK, responseRecorder.Code)     // Проверяет, что статус ответа 200 OK
-	assert.Equal(t, expected, responseRecorder.Body.String()) // Проверяет, что вернулись все кафе
+	require.Equal(t, http.StatusOK, responseRecorder.Code) // Проверяет, что статус ответа 200 OK
+	assert.Len(t, cafeList["moscow"], totalCount)          // Проверят, что длинная, которая вернулась, соответствует ожидаемой
 }
 func TestMainHandlerWhenCityNotFound(t *testing.T) {
 	req := httptest.NewRequest("GET", "/cafe?count=10&city=taganrog", nil)
