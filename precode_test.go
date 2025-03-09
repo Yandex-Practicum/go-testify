@@ -15,15 +15,16 @@ func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
 	handler.ServeHTTP(responseRecorder, req)
-	require.Equal(t, http.StatusOK, responseRecorder.Code) // Проверяет, что статус ответа 200 OK
-	assert.Len(t, cafeList["moscow"], totalCount)          // Проверят, что длинная, которая вернулась, соответствует ожидаемой
+	returnCafe := strings.Split(responseRecorder.Body.String(), ",") // Разделяет тело ответа по ,
+	require.Equal(t, http.StatusOK, responseRecorder.Code)           // Проверяет, что статус ответа 200 OK
+	assert.Len(t, returnCafe, totalCount)                            // Проверят, что длинная, которая вернулась, соответствует ожидаемой
 }
 func TestMainHandlerWhenCityNotFound(t *testing.T) {
 	req := httptest.NewRequest("GET", "/cafe?count=10&city=taganrog", nil)
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
 	handler.ServeHTTP(responseRecorder, req)
-	assert.Equal(t, http.StatusBadRequest, responseRecorder.Code)       // Проверяет, что статус ответа 400 BadRequest
+	require.Equal(t, http.StatusBadRequest, responseRecorder.Code)      // Проверяет, что статус ответа 400 BadRequest
 	assert.Equal(t, "wrong city value", responseRecorder.Body.String()) // Проверяет сообщение об ошибке
 }
 func TestMainHandlerWhenReqIsValid(t *testing.T) {
@@ -31,8 +32,8 @@ func TestMainHandlerWhenReqIsValid(t *testing.T) {
 	responseRecorder := httptest.NewRecorder()
 	handler := http.HandlerFunc(mainHandle)
 	handler.ServeHTTP(responseRecorder, req)
-	require.NotEmpty(t, responseRecorder.Body.String())    //  Убеждается, что тело ответа не пустое
 	require.Equal(t, http.StatusOK, responseRecorder.Code) // Проверяет, что статус ответа 200 OK
+	assert.NotEmpty(t, responseRecorder.Body.String())     //  Убеждается, что тело ответа не пустое
 	returnedCafe := strings.Split(responseRecorder.Body.String(), ",")
 	assert.Len(t, returnedCafe, 3)
 }
