@@ -1,58 +1,40 @@
 package main
 
 import (
-    "net/http"
-    "net/http/httptest"
-    "strconv"
-    "strings"
-    "testing"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var cafeList = map[string][]string{
-    "moscow": []string{"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"},
+func TestMainHandlerCorrectRequest(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/cafe?city=moscow&count=2", nil)
+	rr := httptest.NewRecorder()
+	mainHandle(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "Код ответа не 200")
+	assert.NotEmpty(t, rr.Body.String(), "Тело ответа пустое")
 }
 
-func mainHandle(w http.ResponseWriter, req *http.Request) {
-    countStr := req.URL.Query().Get("count")
-    if countStr == "" {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("count missing"))
-        return
-    }
+func TestMainHandlerWrongCity(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/cafe?city=london&count=2", nil)
+	rr := httptest.NewRecorder()
+	mainHandle(rr, req)
 
-    count, err := strconv.Atoi(countStr)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("wrong count value"))
-        return
-    }
-
-    city := req.URL.Query().Get("city")
-
-    cafe, ok := cafeList[city]
-    if !ok {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("wrong city value"))
-        return
-    }
-
-    if count > len(cafe) {
-        count = len(cafe)
-    }
-
-    answer := strings.Join(cafe[:count], ",")
-
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(answer))
+	require.Equal(t, http.StatusBadRequest, rr.Code, "Код ответа не 400")
+	assert.Equal(t, "wrong city value", rr.Body.String(), "Ошибка в теле ответа")
 }
 
 func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
-    totalCount := 4
-    req := ... // здесь нужно создать запрос к сервису
+	req := httptest.NewRequest(http.MethodGet, "/cafe?city=moscow&count=10", nil)
+	rr := httptest.NewRecorder()
+	mainHandle(rr, req)
 
-    responseRecorder := httptest.NewRecorder()
-    handler := http.HandlerFunc(mainHandle)
-    handler.ServeHTTP(responseRecorder, req)
+	require.Equal(t, http.StatusOK, rr.Code, "Код ответа не 200")
 
-    // здесь нужно добавить необходимые проверки
+	cafes := strings.Split(rr.Body.String(), ",")
+	assert.Len(t, cafes, 4, "Количество кафе не равно 4")
 }
